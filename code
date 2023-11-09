@@ -1,0 +1,45 @@
+function generateAndSendTranscript() {
+  var spreadsheetId = '1nvHIlvEvuAsdpLYl1nfCRLH1XsFE9pgybYebfuTGWNk';
+  var sheetName = 'Аркуш1';
+  var folderId = '14Z788V6tfARsJzhWvAjUrzl8OTbrooPb';
+  var templateDocId = '1dJT_d1z7w7FueedYwM0StWU35WdFOw8L7T04L6Iho7w';
+
+  var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  var data = sheet.getRange("A2:F" + sheet.getLastRow()).getValues();
+
+  for (var i = 0; i < data.length; i++) {
+    var studentData = data[i];
+    var studentName = studentData[0];
+    var studentGroup = studentData[1];
+    var studentEmail = studentData[2];
+    var subject1 = studentData[3];
+    var subject2 = studentData[4];
+    var subject3 = studentData[5];
+
+    var templateFile = DriveApp.getFileById(templateDocId);
+    var newDoc = templateFile.makeCopy();
+    var doc = DocumentApp.openById(newDoc.getId());
+    var body = doc.getBody();
+
+    body.replaceText('{PIB}', studentName);
+    body.replaceText('{Group}', studentGroup);
+    body.replaceText('{Email}', studentEmail);
+    body.replaceText('{Subject1}', subject1);
+    body.replaceText('{Subject2}', subject2);
+    body.replaceText('{Subject3}', subject3);
+
+    var pdf = DriveApp.getFileById(newDoc.getId()).getAs('application/pdf');
+    var pdfName = studentName + '_transcript.pdf';
+
+    var folder = DriveApp.getFolderById(folderId);
+    folder.createFile(pdf.setName(pdfName));
+
+    doc.saveAndClose();
+    DriveApp.getFileById(newDoc.getId()).setTrashed(true);
+
+    var subject = 'Ваша відомість про успішність';
+    var message = 'Долучено вашу відомість про успішність.';
+    MailApp.sendEmail(studentEmail, subject, message, { attachments: [pdf] });
+  }
+}
